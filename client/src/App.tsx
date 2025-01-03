@@ -1,0 +1,233 @@
+import { useState, useEffect } from 'react'
+import { GoogleLogin } from '@react-oauth/google';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+
+import './App.css'
+// import 'leaflet/dist/leaflet.css'
+
+
+function App() {
+  const [token, setToken]: any = useState("")
+  const [email, setEmail]: any = useState("")
+  const [showMap, setShowMap]: any = useState(false)
+  const [map, setMap]: any = useState(null)
+  const [userLocation, setUserLocation]: any = useState(null)
+  const [markers, setMarkers]: any = useState([])
+
+  const initialPosition: any  = { lat: 0, lng: 0 }
+
+  const server_address = "http://localhost"
+  const server_port = "8080"
+  const server = server_address+":"+server_port
+
+  useEffect(() => {
+    if (map) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords
+            const userLocation = {lat: latitude, lng: longitude}
+  
+            // Move the map view and set the user's location
+            map.flyTo(userLocation, 13)
+            setUserLocation(userLocation)
+          },
+          (error) => {
+            console.error("Geolocation error:", error)
+            alert("Unable to fetch your location. Please check your browser settings.")
+          }
+        )
+      }
+      else
+        alert("Geolocation is not supported by your browser.")
+    }
+  }, [map])
+
+  useEffect(() => {
+    if (token && email) {
+      fetch(server+"/api/db/get_user_data", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email })
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log('db response:', data);
+
+        
+
+        setShowMap(true)
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+      
+    }
+  }, [token, email])
+
+  /*
+  const FlyTo = ({lat, lng, zoom=13}: any) => {
+    const handleClick = () => {
+      map.flyTo({ lat: lat, lng: lng }, zoom)
+    }
+
+    return (
+      <button
+        onClick={handleClick}
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 70,
+          zIndex: 1000,
+          backgroundColor: "white",
+          padding: "10px",
+          border: "1px solid gray",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        Move to Location
+      </button>
+    )
+  }
+  */
+
+  const handleLogin = (response: any) => {
+    console.log('Google login response:', response);
+
+    // Send the token to your Node.js backend for verification
+    fetch(server+"/api/auth/login", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: response.credential })
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log('Backend response:', data);
+
+      setToken(data.token)
+      setEmail(data.email)
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+  };
+
+  const CurrentPosition = () => {
+    const handleClick = () => {
+      map.flyTo({ lat: userLocation.lat, lng: userLocation.lng }, 13)
+    }
+
+    return (
+      <button
+        onClick={handleClick}
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 55,
+          zIndex: 1000,
+          backgroundColor: "white",
+          padding: "10px",
+          border: "1px solid gray",
+          borderRadius: "5px",
+          cursor: "pointer"
+        }}
+      >
+        Move to current location
+      </button>
+    )
+  }
+
+  const AddMarker = () => {
+    const handleClick = () => {
+      setMarkers([...markers, { position: userLocation, date: new Date().toLocaleString() }])
+    }
+
+    return (
+      <button
+        onClick={handleClick}
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 230,
+          zIndex: 1000,
+          backgroundColor: "white",
+          padding: "10px",
+          border: "1px solid gray",
+          borderRadius: "5px",
+          cursor: "pointer"
+        }}
+      >
+        Add marker
+      </button>
+    )
+  }
+
+  const MapPlaceholder = () => {
+    return (
+      <p>
+        <noscript>You need to enable JavaScript to see this map.</noscript>
+      </p>
+    )
+  }
+
+
+  return (
+    <div className='root'>
+      <h1>
+        Mapis
+      </h1>
+
+      {!showMap &&
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '20vh' }}>
+            <GoogleLogin
+              onSuccess={handleLogin}
+              onError={() => console.log('Login Failed')}
+              useOneTap={true}
+            />
+        </div>
+      }
+
+      {showMap &&
+        <MapContainer
+          center={initialPosition}
+          zoom={13}
+          scrollWheelZoom={true}
+          ref={setMap}
+          placeholder={<MapPlaceholder />}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {markers.map((marker: any, i: number) => {
+            return (
+              <Marker key={i} position={{lat: marker.position.lat, lng: marker.position.lng}}>
+                <Popup>You pissed here the {marker.date}!</Popup>
+              </Marker>
+            )
+          })
+          }
+
+          {/*
+            <FlyTo 
+              lat={10}
+              lng={500}
+            />
+          */}
+
+          <CurrentPosition />
+          <AddMarker />
+          <MapPlaceholder />
+        </MapContainer>
+      }
+    </div>
+  )
+}
+
+export default App;
