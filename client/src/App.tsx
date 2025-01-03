@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { GoogleLogin } from '@react-oauth/google';
+import toast, { Toaster } from 'react-hot-toast';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 
 import './App.css'
@@ -45,7 +46,7 @@ function App() {
 
   useEffect(() => {
     if (token && email) {
-      fetch(server+"/api/db/get_user_data", {
+      fetch(server+"/api/db/add_user", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,12 +54,10 @@ function App() {
         body: JSON.stringify({ email: email })
       })
       .then((res) => res.json())
-      .then((data) => {
-        console.log('db response:', data);
+      .then(async (data) => {
+        console.log('db response:', data, 'fetching markers...');
 
-        
-
-        setShowMap(true)
+        await getUserMarkers(email)
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -93,6 +92,54 @@ function App() {
     )
   }
   */
+
+  const getUserMarkers = async (email: string) => {
+    fetch(server+"/api/db/get_user_markers", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: email })
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log('Backend response:', data);
+
+      const markersList = []
+      for (let marker of data.response)
+        markersList.push({ type: marker.type, position: { lat: marker.lat, lng: marker.lng }, date: marker.ts_creation })
+
+      setMarkers(markersList)
+
+      setShowMap(true)
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+  }
+
+  const addMarker = async (user: number=1, type: string) => {
+    fetch(server+"/api/db/add_marker", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user: user, type: type, lat: userLocation.lat, lng: userLocation.lng })
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log('Backend response:', data);
+
+      setMarkers([...markers, { type: type, position: { lat: userLocation.lat, lng: userLocation.lng }, date: new Date().toLocaleString() }])
+
+      toast.success("Marker added!");
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+
+      toast.error("Error!");
+    });
+  }
 
   const handleLogin = (response: any) => {
     console.log('Google login response:', response);
@@ -143,13 +190,9 @@ function App() {
   }
 
   const AddMarker = () => {
-    const handleClick = () => {
-      setMarkers([...markers, { position: userLocation, date: new Date().toLocaleString() }])
-    }
-
     return (
       <button
-        onClick={handleClick}
+        onClick={() => addMarker(1, "piss")}
         style={{
           position: "absolute",
           top: 10,

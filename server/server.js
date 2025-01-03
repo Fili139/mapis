@@ -29,6 +29,7 @@ const jwt_secret = process.env.JWT_SECRET
 const client_id = process.env.GOOGLE_ID_CLIENT
 const client_secret = process.env.GOOGLE_CLIENT_SECRET
 
+/*
 const db = mysql.createConnection({
     host: db_host,
     user: db_user,
@@ -42,6 +43,36 @@ db.connect(function(err) {
     if (err) throw err 
     console.log("Connected!") 
 })
+*/
+
+//auxiliar f used to check if a query fails without crashing the server
+const checkQueryErr = (err, res) => {
+  if (err) {             
+    console.debug("QUERY ERROR, Non blocking error:", err);
+    res.status(400).send({ response: err }) 
+
+    return true;
+  }
+  
+  return false;
+}
+
+const pool = mysql.createPool({
+  host: db_host,
+  user: db_user,
+  password: db_password,
+  database: db_database,
+  waitForConnections: true,
+  connectionLimit: 10,
+  //maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
+  //idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  timezone: 'Z',
+  charset: 'utf8mb4', // For full Unicode support
+});
+
 
 /*
 // Initialize Passport.js
@@ -95,13 +126,43 @@ app.post('/api/auth/login', (req, res) => {
 })
 
 app.post('/api/db/add_user', (req, res) => {
-    res.status(200).json({ response: "not yet implemented" })  
+  let email = req.body.email;
+
+  let add_user = `INSERT INTO user (email) VALUES (?) ON DUPLICATE KEY UPDATE email=VALUES(email), ts_update=CURRENT_TIMESTAMP;`;
+  pool.execute(add_user, [email], function (err, result) {
+    if (checkQueryErr(err, res))
+      return;
+
+    res.status(200).json({ response: result })
+  });
+})
+
+app.post('/api/db/add_marker', (req, res) => {
+  let user = req.body.user;
+  let type = req.body.type;
+  let lat = req.body.lat;
+  let lng = req.body.lng;
+
+  let add_user = `INSERT INTO marker (user, type, lat, lng) VALUES (?, ?, ?, ?);`;
+  pool.execute(add_user, [user, type, lat, lng], function (err, result) {
+    if (checkQueryErr(err, res))
+      return;
+
+    res.status(200).json({ response: result })
+  });
 }) 
 
-app.post('/api/db/get_user_data', (req, res) => {
-    res.status(200).json({ response: "not yet implemented" })  
-}) 
+app.post('/api/db/get_user_markers', (req, res) => {
+  let email = req.body.email;
+  
+  let get_user_markers = `SELECT * FROM marker as m JOIN user as u ON u.id=m.user WHERE u.email=?`;
+  pool.execute(get_user_markers, [email], function (err, result) {
+    if (checkQueryErr(err, res))
+      return;
 
+    res.status(200).json({ response: result })
+  });
+})
 
 app.listen(port, ip_address, () => {
   console.debug(`Server is running on ${ip_address} at port ${port} \n`) 
