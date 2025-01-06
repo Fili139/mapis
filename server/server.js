@@ -9,8 +9,14 @@ const { createClient } = require('@supabase/supabase-js');
 // const GoogleStrategy = require('passport-google-oauth20').Strategy
 
 const app = express() 
-app.use(express.json()) 
-app.use(cors()) 
+app.use(express.json())
+
+// Configura il middleware cors
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://mapis.surge.sh', 'https://mapis_beta.surge.sh'],  // Permetti l'accesso al frontend (React app)
+  methods: ['GET', 'POST'],
+}));
+
 
 //if false, logs in the console won't be printed
 const DEBUG = false 
