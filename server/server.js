@@ -158,5 +158,5 @@ app.post('/api/db/get_user_markers', async (req, res) => {
 })
 
 app.listen(port, ip_address, () => {
-  console.debug(`Server is running on ${ip_address} at port ${port} \n`) 
+  console.log(`Server is running on ${ip_address} at port ${port} \n`) 
 }) 
