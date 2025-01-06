@@ -14,7 +14,7 @@ app.use(express.json())
 // Configura il middleware cors
 app.use(cors({
   origin: ['http://localhost:5173', 'https://mapis.surge.sh', 'https://mapis_beta.surge.sh'],  // Permetti l'accesso al frontend (React app)
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'OPTIONS'],
 }));
 
 

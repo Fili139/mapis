@@ -18,7 +18,7 @@ function App() {
   const initialPosition: any  = { lat: 0, lng: 0 }
 
   // const server = "http://localhost:8080"
-  const server = "https://mapis-server.netlify.app"
+  const server = "https://mapis-production.up.railway.app:8080"
 
   useEffect(() => {
     if (map) {
