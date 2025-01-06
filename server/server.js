@@ -1,6 +1,7 @@
 // env var
 require('dotenv').config()
 const express = require('express') 
+const http = require('http');
 const jwt = require('jsonwebtoken') 
 const cors = require('cors') 
 const { createClient } = require('@supabase/supabase-js');
