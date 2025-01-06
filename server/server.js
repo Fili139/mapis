@@ -126,16 +126,18 @@ app.post('/api/db/add_user', async (req, res) => {
 })
 
 app.post('/api/db/add_marker', async (req, res) => {
-  let user = req.body.user;
+  let email = req.body.email;
   let type = req.body.type;
   let description = req.body.description;
   let lat = req.body.lat;
   let lng = req.body.lng;
 
+  let userId = await getUserId(email)
+
   const { data, error } = await supabase
   .from('marker')
   .insert([
-    { user: user, type: type, description, description, lat: lat, lng: lng }
+    { user: userId, type: type, description, description, lat: lat, lng: lng }
   ])
   .select();
 

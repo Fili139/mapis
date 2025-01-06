@@ -34,7 +34,23 @@ function App() {
           },
           (error) => {
             console.error("Geolocation error:", error)
-            alert("Unable to fetch your location. Please check your browser settings.")
+
+            let errorMessage = ""
+            switch (error.code) {
+              case 1:
+                errorMessage ="Permission denied. Please allow location access."
+                break;
+              case 2:
+                errorMessage ="Position unavailable. Check your network or GPS."
+                break;
+              case 3:
+                errorMessage ="Request timed out. Try again."
+                break;
+              default:
+                errorMessage = "An unknown error occurred."
+            }
+
+            alert("Unable to fetch your location. " + errorMessage)
           }
         )
       }
@@ -117,7 +133,7 @@ function App() {
     });
   }
 
-  const addMarker = async (user: number=1, type: string) => {
+  const addMarker = async (type: string) => {
     const description = prompt("Add a description for this marker...");
 
     fetch(server+"/api/db/add_marker", {
@@ -125,7 +141,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ user: user, type: type, description: description, lat: userLocation.lat, lng: userLocation.lng })
+      body: JSON.stringify({ email: email, type: type, description: description, lat: userLocation.lat, lng: userLocation.lng })
     })
     .then((res) => res.json())
     .then((_data) => {
@@ -220,7 +236,7 @@ function App() {
   const AddMarker = () => {
     return (
       <button
-        onClick={() => addMarker(1, "piss")}
+        onClick={() => addMarker("piss")}
         style={{
           position: "absolute",
           top: 10,
@@ -265,7 +281,7 @@ function App() {
             <GoogleLogin
               onSuccess={handleLogin}
               onError={() => console.error('Login Failed')}
-              useOneTap={true}
+              useOneTap={false}
             />
         </div>
       }
