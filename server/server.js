@@ -9,6 +9,8 @@ const { createClient } = require('@supabase/supabase-js');
 // const GoogleStrategy = require('passport-google-oauth20').Strategy
 
 const app = express() 
+const server = http.createServer(app);
+
 app.use(express.json())
 
 // Configura il middleware cors
@@ -62,6 +64,10 @@ const getUserId = async (email) => {
 
   return error ? null : data[0].id
 }
+
+app.get('/', (req, res) => {
+  res.redirect('https://mapis.surge.sh');
+})
 
 app.post('/api/auth/login', (req, res) => {
     const { token } = req.body 
@@ -157,6 +163,6 @@ app.post('/api/db/get_user_markers', async (req, res) => {
   }
 })
 
-app.listen(port, ip_address, () => {
-  console.log(`Server is running on ${ip_address} at port ${port} \n`) 
-}) 
+server.listen(port, () => {
+  console.log(`Server in ascolto sulla porta ${port}`);
+});
