@@ -55,7 +55,7 @@ function App() {
       })
       .then((res) => res.json())
       .then(async (data) => {
-        console.log('db response:', data, 'fetching markers...');
+        // console.log('db response:', data, 'fetching markers...');
 
         await getUserMarkers(email)
       })
@@ -103,11 +103,11 @@ function App() {
     })
     .then((res) => res.json())
     .then((data) => {
-      console.log('Backend response:', data);
+      // console.log('Backend response:', data);
 
       const markersList = []
       for (let marker of data.response)
-        markersList.push({ type: marker.type, position: { lat: marker.lat, lng: marker.lng }, date: marker.ts_creation })
+        markersList.push({ type: marker.type, description: marker.description, position: { lat: marker.lat, lng: marker.lng }, date: marker.ts_creation })
 
       setMarkers(markersList)
 
@@ -119,18 +119,20 @@ function App() {
   }
 
   const addMarker = async (user: number=1, type: string) => {
+    const description = prompt("Add a description for this marker...");
+
     fetch(server+"/api/db/add_marker", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ user: user, type: type, lat: userLocation.lat, lng: userLocation.lng })
+      body: JSON.stringify({ user: user, type: type, description: description, lat: userLocation.lat, lng: userLocation.lng })
     })
     .then((res) => res.json())
     .then((data) => {
-      console.log('Backend response:', data);
+      // console.log('Backend response:', data);
 
-      setMarkers([...markers, { type: type, position: { lat: userLocation.lat, lng: userLocation.lng }, date: new Date().toLocaleString() }])
+      setMarkers([...markers, { type: type, description: description, position: { lat: userLocation.lat, lng: userLocation.lng }, date: new Date().toLocaleString() }])
 
       toast.success("Marker added!");
     })
@@ -142,7 +144,7 @@ function App() {
   }
 
   const handleLogin = (response: any) => {
-    console.log('Google login response:', response);
+    // console.log('Google login response:', response);
 
     // Send the token to your Node.js backend for verification
     fetch(server+"/api/auth/login", {
@@ -154,7 +156,7 @@ function App() {
     })
     .then((res) => res.json())
     .then((data) => {
-      console.log('Backend response:', data);
+      // console.log('Backend response:', data);
 
       setToken(data.token)
       setEmail(data.email)
@@ -188,6 +190,33 @@ function App() {
       </button>
     )
   }
+
+  /*
+  const ZoomOut = () => {
+    const handleClick = () => {
+      map.setZoom(map.getZoom() - 1);
+    }
+
+    return (
+      <button
+        onClick={handleClick}
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 230,
+          zIndex: 1000,
+          backgroundColor: "white",
+          padding: "10px",
+          border: "1px solid gray",
+          borderRadius: "5px",
+          cursor: "pointer"
+        }}
+      >
+        Zoom out
+      </button>
+    )
+  }
+  */
 
   const AddMarker = () => {
     return (
@@ -229,7 +258,7 @@ function App() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '20vh' }}>
             <GoogleLogin
               onSuccess={handleLogin}
-              onError={() => console.log('Login Failed')}
+              onError={() => console.error('Login Failed')}
               useOneTap={true}
             />
         </div>
@@ -251,7 +280,7 @@ function App() {
           {markers.map((marker: any, i: number) => {
             return (
               <Marker key={i} position={{lat: marker.position.lat, lng: marker.position.lng}}>
-                <Popup>You pissed here the {marker.date}!</Popup>
+                <Popup>{marker.description}</Popup>
               </Marker>
             )
           })
@@ -264,6 +293,7 @@ function App() {
             />
           */}
 
+          {/* <ZoomOut /> */}
           <CurrentPosition />
           <AddMarker />
           <MapPlaceholder />

@@ -1,78 +1,31 @@
 // env var
 require('dotenv').config()
-//l used to create and connect to mysql db
-const mysql = require("mysql2")
 const express = require('express') 
 const jwt = require('jsonwebtoken') 
 const cors = require('cors') 
+const { createClient } = require('@supabase/supabase-js');
 
 // const passport = require('passport') 
 // const GoogleStrategy = require('passport-google-oauth20').Strategy
 
 const app = express() 
-
 app.use(express.json()) 
 app.use(cors()) 
 
 //if false, logs in the console won't be printed
 const DEBUG = false 
 if(!DEBUG)
-    console.log = function() {}
+    console.debug = function() {}
 
 const port = process.env.PORT
 const ip_address = process.env.IP_ADDRESS
-const db_host = process.env.DB_HOST
-const db_user = process.env.DB_USER
-const db_password = process.env.DB_PASSWORD
-const db_database = process.env.DB_DATABASE
 const jwt_secret = process.env.JWT_SECRET
 const client_id = process.env.GOOGLE_ID_CLIENT
 const client_secret = process.env.GOOGLE_CLIENT_SECRET
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-/*
-const db = mysql.createConnection({
-    host: db_host,
-    user: db_user,
-    password: db_password,
-    database: db_database,
-    timezone: "Z"
-})
-
-//DB connection
-db.connect(function(err) {
-    if (err) throw err 
-    console.log("Connected!") 
-})
-*/
-
-//auxiliar f used to check if a query fails without crashing the server
-const checkQueryErr = (err, res) => {
-  if (err) {             
-    console.debug("QUERY ERROR, Non blocking error:", err);
-    res.status(400).send({ response: err }) 
-
-    return true;
-  }
-  
-  return false;
-}
-
-const pool = mysql.createPool({
-  host: db_host,
-  user: db_user,
-  password: db_password,
-  database: db_database,
-  waitForConnections: true,
-  connectionLimit: 10,
-  //maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
-  //idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  timezone: 'Z',
-  charset: 'utf8mb4', // For full Unicode support
-});
-
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 /*
 // Initialize Passport.js
@@ -94,6 +47,15 @@ passport.use(
   passport.serializeUser((user, done) => done(null, user)) 
   passport.deserializeUser((user, done) => done(null, user)) 
 */
+
+const getUserId = async (email) => {
+  const { data, error } = await supabase
+  .from('user')
+  .select()
+  .eq('email', email)
+
+  return error ? null : data[0].id
+}
 
 app.post('/api/auth/login', (req, res) => {
     const { token } = req.body 
@@ -125,43 +87,68 @@ app.post('/api/auth/login', (req, res) => {
     }) 
 })
 
-app.post('/api/db/add_user', (req, res) => {
+app.post('/api/db/add_user', async (req, res) => {
   let email = req.body.email;
 
-  let add_user = `INSERT INTO user (email) VALUES (?) ON DUPLICATE KEY UPDATE email=VALUES(email), ts_update=CURRENT_TIMESTAMP;`;
-  pool.execute(add_user, [email], function (err, result) {
-    if (checkQueryErr(err, res))
-      return;
+  const { data, error } = await supabase
+  .from('user')
+  .upsert([
+    { email: email }
+  ], { onConflict: 'email' })
+  .select();
 
-    res.status(200).json({ response: result })
-  });
+  if (error) {
+    console.debug("add_user error:", error)
+    res.status(400).send({ response: error }) 
+  }
+  else {
+    console.debug("add_user data:", data)
+    res.status(200).json({ response: data[0] })
+  }
 })
 
-app.post('/api/db/add_marker', (req, res) => {
+app.post('/api/db/add_marker', async (req, res) => {
   let user = req.body.user;
   let type = req.body.type;
+  let description = req.body.description;
   let lat = req.body.lat;
   let lng = req.body.lng;
 
-  let add_user = `INSERT INTO marker (user, type, lat, lng) VALUES (?, ?, ?, ?);`;
-  pool.execute(add_user, [user, type, lat, lng], function (err, result) {
-    if (checkQueryErr(err, res))
-      return;
+  const { data, error } = await supabase
+  .from('marker')
+  .insert([
+    { user: user, type: type, description, description, lat: lat, lng: lng }
+  ])
+  .select();
 
-    res.status(200).json({ response: result })
-  });
+  if (error) {
+    console.debug("add_marker error:", error)
+    res.status(400).send({ response: error }) 
+  }
+  else {
+    console.debug("add_marker data:", data)
+    res.status(200).json({ response: data[0] })
+  }
 }) 
 
-app.post('/api/db/get_user_markers', (req, res) => {
+app.post('/api/db/get_user_markers', async (req, res) => {
   let email = req.body.email;
   
-  let get_user_markers = `SELECT * FROM marker as m JOIN user as u ON u.id=m.user WHERE u.email=?`;
-  pool.execute(get_user_markers, [email], function (err, result) {
-    if (checkQueryErr(err, res))
-      return;
+  let userId = await getUserId(email)
 
-    res.status(200).json({ response: result })
-  });
+  const { data, error } = await supabase
+  .from('marker')
+  .select()
+  .eq('user', userId)
+
+  if (error) {
+    console.debug("get_user_markers error:", error)
+    res.status(400).send({ response: error }) 
+  }
+  else {
+    console.debug("get_user_markers data:", data)
+    res.status(200).json({ response: data })
+  }
 })
 
 app.listen(port, ip_address, () => {
