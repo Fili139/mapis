@@ -18,7 +18,7 @@ function App() {
   const initialPosition: any  = { lat: 0, lng: 0 }
 
   // const server = "http://localhost:8080"
-  const server = "https://mapis-production.up.railway.app:8080"
+  const server = "https://mapis-production.up.railway.app"
 
   useEffect(() => {
     if (map) {
@@ -53,8 +53,8 @@ function App() {
         body: JSON.stringify({ email: email })
       })
       .then((res) => res.json())
-      .then(async (data) => {
-        // console.log('db response:', data, 'fetching markers...');
+      .then(async (_data) => {
+        // console.log('db response:', _data, 'fetching markers...');
 
         await getUserMarkers(email)
       })
@@ -128,8 +128,8 @@ function App() {
       body: JSON.stringify({ user: user, type: type, description: description, lat: userLocation.lat, lng: userLocation.lng })
     })
     .then((res) => res.json())
-    .then((data) => {
-      // console.log('Backend response:', data);
+    .then((_data) => {
+      // console.log('Backend response:', _data);
 
       setMarkers([...markers, { type: type, description: description, position: { lat: userLocation.lat, lng: userLocation.lng }, date: new Date().toLocaleString() }])
 
@@ -249,6 +249,13 @@ function App() {
 
   return (
     <div className='root'>
+      <Toaster
+        toastOptions={{
+          // Define default options
+          duration: 3750
+        }}
+      />
+
       <h1>
         Mapis
       </h1>

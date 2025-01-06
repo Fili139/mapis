@@ -20,6 +20,11 @@ app.use(cors({
   methods: ['GET', 'POST', 'OPTIONS'],
 }));
 
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none'); // May also be required
+  next();
+});
 
 //if false, logs in the console won't be printed
 const DEBUG = false 
