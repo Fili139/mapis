@@ -1,4 +1,4 @@
-/*
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -14,6 +14,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+button {
+  color: black;
+  background-color: white;
+}
+
+/*
 a {
   font-weight: 500;
   color: #646cff;
